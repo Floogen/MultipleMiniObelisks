@@ -13,39 +13,31 @@ namespace MultipleMiniObelisks.UI
 {
 	public class TeleportMenu : IClickableMenu
 	{
+		// Constants
 		public const int obelisksPerPage = 6;
-
 		public const int region_forwardButton = 101;
-
 		public const int region_backButton = 102;
 
-		public const int region_rewardBox = 103;
-
-		public const int region_cancelQuestButton = 104;
-
+		// UI related
 		private List<List<StardewValley.Object>> pages;
-
 		public List<ClickableComponent> teleportDestinationButtons;
 		public List<ClickableTextureComponent> renameObeliskButtons;
-
-		private int currentPage;
-
-		private int questPage = -1;
-
 		public ClickableTextureComponent forwardButton;
-
 		public ClickableTextureComponent backButton;
-
 		protected float _contentHeight;
-
 		private string hoverText = "";
 
-		private List<StardewValley.Object> miniObelisks = new List<StardewValley.Object>();
-
+		// Logic related
+		private int currentPage;
+		private int questPage = -1;
 		private string obeliskNameDataKey = "PeacefulEnd.MultipleMiniObelisks/destination-name";
 
-		public TeleportMenu(List<StardewValley.Object> miniObelisks) : base(0, 0, 0, 0, showUpperRightCloseButton: true)
+		private List<StardewValley.Object> miniObelisks = new List<StardewValley.Object>();
+		private StardewValley.Object sourceObelisk;
+
+		public TeleportMenu(StardewValley.Object sourceObelisk, List<StardewValley.Object> miniObelisks) : base(0, 0, 0, 0, showUpperRightCloseButton: true)
 		{
+			this.sourceObelisk = sourceObelisk;
 			this.miniObelisks = miniObelisks;
 
 			Game1.playSound("bigSelect");
@@ -341,7 +333,7 @@ namespace MultipleMiniObelisks.UI
 				if (this.pages.Count() > 0 && this.pages[this.currentPage].Count() > j)
 				{
 					IClickableMenu.drawTextureBox(b, Game1.mouseCursors, new Rectangle(384, 396, 15, 15), this.teleportDestinationButtons[j].bounds.X, this.teleportDestinationButtons[j].bounds.Y, this.teleportDestinationButtons[j].bounds.Width, this.teleportDestinationButtons[j].bounds.Height, this.teleportDestinationButtons[j].containsPoint(Game1.getOldMouseX(), Game1.getOldMouseY()) ? Color.Wheat : Color.White, 4f, drawShadow: false);
-					Utility.drawWithShadow(b, Game1.objectSpriteSheet, new Vector2(this.teleportDestinationButtons[j].bounds.X + 32, this.teleportDestinationButtons[j].bounds.Y + 28), new Rectangle(0, 512, 16, 16), Color.White, 0f, Vector2.Zero, 2f, flipped: false, 0.99f, shadowIntensity: 0f);
+					Utility.drawWithShadow(b, Game1.objectSpriteSheet, new Vector2(this.teleportDestinationButtons[j].bounds.X + 32, this.teleportDestinationButtons[j].bounds.Y + 28), new Rectangle(0, 512, 16, 16), sourceObelisk == this.pages[this.currentPage][j] ? Color.White : Color.Gray, 0f, Vector2.Zero, 2f, flipped: false, 0.99f, shadowIntensity: 0f);
 					SpriteText.drawString(b, this.pages[this.currentPage][j].modData[obeliskNameDataKey], this.teleportDestinationButtons[j].bounds.X + 128 + 4, this.teleportDestinationButtons[j].bounds.Y + 20);
 					
 					// Draw the rename button
