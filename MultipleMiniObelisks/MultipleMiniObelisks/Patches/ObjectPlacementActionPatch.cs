@@ -12,6 +12,7 @@ namespace MultipleMiniObelisks.Patches
     public class ObjectPlacementActionPatch
     {
         private static IMonitor monitor = ModResources.GetMonitor();
+        private static ModConfig config = ModResources.GetConfig();
 
         internal static MethodInfo TargetMethod()
         {
@@ -25,10 +26,12 @@ namespace MultipleMiniObelisks.Patches
             {
                 Vector2 placementTile = new Vector2(x / 64, y / 64);
 
-                if (!(location is Farm))
+                if (!(location is Farm) && !config.AllowMiniObelisksToBePlacedAnywhere)
 				{
 					Game1.showRedMessage(Game1.content.LoadString("Strings\\StringsFromCSFiles:OnlyPlaceOnFarm"));
-				}
+                    __result = false;
+                    return false;
+                }
 
                 Object toPlace = (Object)__instance.getOne();
                 toPlace.shakeTimer = 50;
