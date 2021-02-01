@@ -13,7 +13,7 @@ namespace MultipleMiniObelisks.UI
 {
 	public class TeleportMenu : IClickableMenu
 	{
-		public const int questsPerPage = 6;
+		public const int obelisksPerPage = 6;
 
 		public const int region_forwardButton = 101;
 
@@ -36,25 +36,7 @@ namespace MultipleMiniObelisks.UI
 
 		public ClickableTextureComponent backButton;
 
-		protected IQuest _shownQuest;
-
-		protected List<string> _objectiveText;
-
 		protected float _contentHeight;
-
-		protected float _scissorRectHeight;
-
-		public float scrollAmount;
-
-		public ClickableTextureComponent upArrow;
-
-		public ClickableTextureComponent downArrow;
-
-		public ClickableTextureComponent scrollBar;
-
-		private bool scrolling;
-
-		public Rectangle scrollBarBounds;
 
 		private string hoverText = "";
 
@@ -117,15 +99,6 @@ namespace MultipleMiniObelisks.UI
 				myID = 101
 			};
 
-			int scrollbar_x = base.xPositionOnScreen + base.width + 16;
-			this.upArrow = new ClickableTextureComponent(new Rectangle(scrollbar_x, base.yPositionOnScreen + 96, 44, 48), Game1.mouseCursors, new Rectangle(421, 459, 11, 12), 4f);
-			this.downArrow = new ClickableTextureComponent(new Rectangle(scrollbar_x, base.yPositionOnScreen + base.height - 64, 44, 48), Game1.mouseCursors, new Rectangle(421, 472, 11, 12), 4f);
-			this.scrollBarBounds = default(Rectangle);
-			this.scrollBarBounds.X = this.upArrow.bounds.X + 12;
-			this.scrollBarBounds.Width = 24;
-			this.scrollBarBounds.Y = this.upArrow.bounds.Y + this.upArrow.bounds.Height + 4;
-			this.scrollBarBounds.Height = this.downArrow.bounds.Y - 4 - this.scrollBarBounds.Y;
-			this.scrollBar = new ClickableTextureComponent(new Rectangle(this.scrollBarBounds.X, this.scrollBarBounds.Y, 24, 40), Game1.mouseCursors, new Rectangle(435, 463, 6, 10), 4f);
 			if (Game1.options.SnappyMenus)
 			{
 				base.populateClickableComponentList();
@@ -133,72 +106,18 @@ namespace MultipleMiniObelisks.UI
 			}
 		}
 
-		protected override void customSnapBehavior(int direction, int oldRegion, int oldID)
-		{
-			if (oldID >= 0 && oldID < 6 && this.questPage == -1)
-			{
-				switch (direction)
-				{
-					case 2:
-						if (oldID < 5 && this.pages[this.currentPage].Count - 1 > oldID)
-						{
-							base.currentlySnappedComponent = base.getComponentWithID(oldID + 1);
-						}
-						break;
-					case 1:
-						if (this.currentPage < this.pages.Count - 1)
-						{
-							base.currentlySnappedComponent = base.getComponentWithID(101);
-							base.currentlySnappedComponent.leftNeighborID = oldID;
-						}
-						break;
-					case 3:
-						if (this.currentPage > 0)
-						{
-							base.currentlySnappedComponent = base.getComponentWithID(102);
-							base.currentlySnappedComponent.rightNeighborID = oldID;
-						}
-						break;
-				}
-			}
-			else if (oldID == 102)
-			{
-				if (this.questPage != -1)
-				{
-					return;
-				}
-				base.currentlySnappedComponent = base.getComponentWithID(0);
-			}
-			this.snapCursorToCurrentSnappedComponent();
-		}
-
-		public override void snapToDefaultClickableComponent()
-		{
-			base.currentlySnappedComponent = base.getComponentWithID(0);
-			this.snapCursorToCurrentSnappedComponent();
-		}
-
-		public override void receiveGamePadButton(Buttons b)
-		{
-			if (b == Buttons.RightTrigger && this.questPage == -1 && this.currentPage < this.pages.Count - 1)
-			{
-				this.nonQuestPageForwardButton();
-			}
-			else if (b == Buttons.LeftTrigger && this.questPage == -1 && this.currentPage > 0)
-			{
-				this.nonQuestPageBackButton();
-			}
-		}
-
 		private void EnsureModDataKeyIsPresent()
-        {
-			int count = miniObelisks.Count - 1;
+		{
+			// Not doing miniObelisks.Count - 1 so to avoid "... #0"
+			int count = miniObelisks.Count;
 			foreach (StardewValley.Object obelisk in miniObelisks)
 			{
 				if (!obelisk.modData.ContainsKey(obeliskNameDataKey))
 				{
 					obelisk.modData.Add(obeliskNameDataKey, string.Concat(obelisk.Name, " #", count));
 				}
+
+				count--;
 			}
 		}
 
@@ -210,11 +129,11 @@ namespace MultipleMiniObelisks.UI
 			int count = miniObelisks.Count - 1;
 			this.pages = new List<List<StardewValley.Object>>();
 			foreach (StardewValley.Object obelisk in miniObelisks.OrderBy(o => o.modData[obeliskNameDataKey]))
-            {
+			{
 				if (obelisk is null)
-                {
+				{
 					continue;
-                }
+				}
 
 				int which2 = miniObelisks.Count - 1 - count;
 				while (this.pages.Count <= which2 / 6)
@@ -222,6 +141,8 @@ namespace MultipleMiniObelisks.UI
 					this.pages.Add(new List<StardewValley.Object>());
 				}
 				this.pages[which2 / 6].Add(obelisk);
+
+				count--;
 			}
 
 			if (this.pages.Count == 0)
@@ -232,234 +153,8 @@ namespace MultipleMiniObelisks.UI
 			this.questPage = -1;
 		}
 
-		public bool NeedsScroll()
-		{
-			if (this._shownQuest != null && this._shownQuest.ShouldDisplayAsComplete())
-			{
-				return false;
-			}
-			if (this.questPage != -1)
-			{
-				return this._contentHeight > this._scissorRectHeight;
-			}
-			return false;
-		}
-
-		public override void receiveScrollWheelAction(int direction)
-		{
-			if (this.NeedsScroll())
-			{
-				float new_scroll = this.scrollAmount - (float)(Math.Sign(direction) * 64 / 2);
-				if (new_scroll < 0f)
-				{
-					new_scroll = 0f;
-				}
-				if (new_scroll > this._contentHeight - this._scissorRectHeight)
-				{
-					new_scroll = this._contentHeight - this._scissorRectHeight;
-				}
-				if (this.scrollAmount != new_scroll)
-				{
-					this.scrollAmount = new_scroll;
-					Game1.playSound("shiny4");
-					this.SetScrollBarFromAmount();
-				}
-			}
-			base.receiveScrollWheelAction(direction);
-		}
-
-		public override void performHoverAction(int x, int y)
-		{
-			this.hoverText = "";
-			base.performHoverAction(x, y);
-			if (this.questPage == -1)
-			{
-				for (int i = 0; i < this.teleportDestinationButtons.Count; i++)
-				{
-					if (this.pages.Count > 0 && this.pages[0].Count > i && this.renameObeliskButtons[i].containsPoint(x, y))
-                    {
-						this.hoverText = "Rename Obelisk";
-					}
-				}
-			}
-
-			this.forwardButton.tryHover(x, y, 0.2f);
-			this.backButton.tryHover(x, y, 0.2f);
-
-			if (this.NeedsScroll())
-			{
-				this.upArrow.tryHover(x, y);
-				this.downArrow.tryHover(x, y);
-				this.scrollBar.tryHover(x, y);
-				_ = this.scrolling;
-			}
-		}
-
-		public override void receiveKeyPress(Keys key)
-		{
-			base.receiveKeyPress(key);
-			if (Game1.options.doesInputListContain(Game1.options.journalButton, key) && this.readyToClose())
-			{
-				Game1.exitActiveMenu();
-				Game1.playSound("bigDeSelect");
-			}
-		}
-
-		private void nonQuestPageForwardButton()
-		{
-			this.currentPage++;
-			Game1.playSound("shwip");
-			if (Game1.options.SnappyMenus && this.currentPage == this.pages.Count - 1)
-			{
-				base.currentlySnappedComponent = base.getComponentWithID(0);
-				this.snapCursorToCurrentSnappedComponent();
-			}
-		}
-
-		private void nonQuestPageBackButton()
-		{
-			this.currentPage--;
-			Game1.playSound("shwip");
-			if (Game1.options.SnappyMenus && this.currentPage == 0)
-			{
-				base.currentlySnappedComponent = base.getComponentWithID(0);
-				this.snapCursorToCurrentSnappedComponent();
-			}
-		}
-
-		public override void leftClickHeld(int x, int y)
-		{
-			if (!GameMenu.forcePreventClose)
-			{
-				base.leftClickHeld(x, y);
-				if (this.scrolling)
-				{
-					this.SetScrollFromY(y);
-				}
-			}
-		}
-
-		public override void releaseLeftClick(int x, int y)
-		{
-			if (!GameMenu.forcePreventClose)
-			{
-				base.releaseLeftClick(x, y);
-				this.scrolling = false;
-			}
-		}
-
-		public virtual void SetScrollFromY(int y)
-		{
-			int y2 = this.scrollBar.bounds.Y;
-			float percentage = (float)(y - this.scrollBarBounds.Y) / (float)(this.scrollBarBounds.Height - this.scrollBar.bounds.Height);
-			percentage = Utility.Clamp(percentage, 0f, 1f);
-			this.scrollAmount = percentage * (this._contentHeight - this._scissorRectHeight);
-			this.SetScrollBarFromAmount();
-			if (y2 != this.scrollBar.bounds.Y)
-			{
-				Game1.playSound("shiny4");
-			}
-		}
-
-		public void UpArrowPressed()
-		{
-			this.upArrow.scale = this.upArrow.baseScale;
-			this.scrollAmount -= 64f;
-			if (this.scrollAmount < 0f)
-			{
-				this.scrollAmount = 0f;
-			}
-			this.SetScrollBarFromAmount();
-		}
-
-		public void DownArrowPressed()
-		{
-			this.downArrow.scale = this.downArrow.baseScale;
-			this.scrollAmount += 64f;
-			if (this.scrollAmount > this._contentHeight - this._scissorRectHeight)
-			{
-				this.scrollAmount = this._contentHeight - this._scissorRectHeight;
-			}
-			this.SetScrollBarFromAmount();
-		}
-
-		private void SetScrollBarFromAmount()
-		{
-			if (!this.NeedsScroll())
-			{
-				this.scrollAmount = 0f;
-				return;
-			}
-			if (this.scrollAmount < 8f)
-			{
-				this.scrollAmount = 0f;
-			}
-			if (this.scrollAmount > this._contentHeight - this._scissorRectHeight - 8f)
-			{
-				this.scrollAmount = this._contentHeight - this._scissorRectHeight;
-			}
-			this.scrollBar.bounds.Y = (int)((float)this.scrollBarBounds.Y + (float)(this.scrollBarBounds.Height - this.scrollBar.bounds.Height) / Math.Max(1f, this._contentHeight - this._scissorRectHeight) * this.scrollAmount);
-		}
-
-		public override void applyMovementKey(int direction)
-		{
-			base.applyMovementKey(direction);
-			if (this.NeedsScroll())
-			{
-				switch (direction)
-				{
-					case 0:
-						this.UpArrowPressed();
-						break;
-					case 2:
-						this.DownArrowPressed();
-						break;
-				}
-			}
-		}
-
-		public override void receiveLeftClick(int x, int y, bool playSound = true)
-		{
-			base.receiveLeftClick(x, y, playSound);
-			if (Game1.activeClickableMenu == null)
-			{
-				return;
-			}
-
-			for (int i = 0; i < this.teleportDestinationButtons.Count; i++)
-			{
-				if (!(this.pages.Count > 0 && this.pages[this.currentPage].Count > i))
-                {
-					continue;
-                }
-
-				if (this.renameObeliskButtons[i].containsPoint(x, y))
-                {
-					this.hoverText = "";
-					Game1.activeClickableMenu = new RenameMenu(this, "Rename the Obelisk", this.pages[this.currentPage][i]);
-				}
-				else if (this.teleportDestinationButtons[i].containsPoint(x, y))
-				{
-					base.exitThisMenu();
-
-					AttemptTeleport(Game1.player, this.pages[this.currentPage][i]);
-					return;
-				}
-			}
-			if (this.currentPage < this.pages.Count - 1 && this.forwardButton.containsPoint(x, y))
-			{
-				this.nonQuestPageForwardButton();
-				return;
-			}
-			if (this.currentPage > 0 && this.backButton.containsPoint(x, y))
-			{
-				this.nonQuestPageBackButton();
-				return;
-			}
-		}
-
 		private bool AttemptTeleport(Farmer who, StardewValley.Object obelisk)
-        {
+		{
 			Vector2 target = obelisk.TileLocation;
 			foreach (Vector2 v in new List<Vector2>
 			{
@@ -505,6 +200,136 @@ namespace MultipleMiniObelisks.UI
 			Game1.showRedMessage(Game1.content.LoadString("Strings\\StringsFromCSFiles:MiniObelisk_NeedsSpace"));
 			return false;
 		}
+		public override void receiveGamePadButton(Buttons b)
+		{
+			if (b == Buttons.RightTrigger && this.questPage == -1 && this.currentPage < this.pages.Count - 1)
+			{
+				this.pageForwardButton();
+			}
+			else if (b == Buttons.LeftTrigger && this.questPage == -1 && this.currentPage > 0)
+			{
+				this.pageBackButton();
+			}
+		}
+
+		public override void receiveScrollWheelAction(int direction)
+		{
+			base.receiveScrollWheelAction(direction);
+			if (direction > 0 && currentPage > 0)
+			{
+				this.currentPage--;
+				Game1.playSound("shiny4");
+			}
+			else if (direction < 0 && currentPage < pages.Count - 1)
+			{
+				this.currentPage++;
+				Game1.playSound("shiny4");
+			}
+		}
+
+		public override void performHoverAction(int x, int y)
+		{
+			this.hoverText = "";
+			base.performHoverAction(x, y);
+			if (this.questPage == -1)
+			{
+				for (int i = 0; i < this.teleportDestinationButtons.Count; i++)
+				{
+					if (this.pages.Count > 0 && this.pages[0].Count > i && this.renameObeliskButtons[i].containsPoint(x, y))
+                    {
+						this.hoverText = "Rename Obelisk";
+					}
+				}
+			}
+
+			this.forwardButton.tryHover(x, y, 0.2f);
+			this.backButton.tryHover(x, y, 0.2f);
+		}
+
+		public override void receiveKeyPress(Keys key)
+		{
+			base.receiveKeyPress(key);
+			if (Game1.options.doesInputListContain(Game1.options.journalButton, key) && this.readyToClose())
+			{
+				Game1.exitActiveMenu();
+				Game1.playSound("bigDeSelect");
+			}
+		}
+
+		private void pageForwardButton()
+		{
+			this.currentPage++;
+			Game1.playSound("shwip");
+			if (Game1.options.SnappyMenus && this.currentPage == this.pages.Count - 1)
+			{
+				base.currentlySnappedComponent = base.getComponentWithID(0);
+				this.snapCursorToCurrentSnappedComponent();
+			}
+		}
+
+		private void pageBackButton()
+		{
+			this.currentPage--;
+			Game1.playSound("shwip");
+			if (Game1.options.SnappyMenus && this.currentPage == 0)
+			{
+				base.currentlySnappedComponent = base.getComponentWithID(0);
+				this.snapCursorToCurrentSnappedComponent();
+			}
+		}
+
+		public override void releaseLeftClick(int x, int y)
+		{
+			if (!GameMenu.forcePreventClose)
+			{
+				base.releaseLeftClick(x, y);
+			}
+		}
+
+		public override void applyMovementKey(int direction)
+		{
+			base.applyMovementKey(direction);
+		}
+
+		public override void receiveLeftClick(int x, int y, bool playSound = true)
+		{
+			base.receiveLeftClick(x, y, playSound);
+			if (Game1.activeClickableMenu == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < this.teleportDestinationButtons.Count; i++)
+			{
+				if (!(this.pages.Count > 0 && this.pages[this.currentPage].Count > i))
+                {
+					continue;
+                }
+
+				if (this.renameObeliskButtons[i].containsPoint(x, y))
+                {
+					this.hoverText = "";
+					Game1.activeClickableMenu = new RenameMenu(this, "Rename the Obelisk", this.pages[this.currentPage][i]);
+				}
+				else if (this.teleportDestinationButtons[i].containsPoint(x, y))
+				{
+					base.exitThisMenu();
+
+					AttemptTeleport(Game1.player, this.pages[this.currentPage][i]);
+					return;
+				}
+			}
+			if (this.currentPage < this.pages.Count - 1 && this.forwardButton.containsPoint(x, y))
+			{
+				this.pageForwardButton();
+				return;
+			}
+			if (this.currentPage > 0 && this.backButton.containsPoint(x, y))
+			{
+				this.pageBackButton();
+				return;
+			}
+		}
 
 		public override void draw(SpriteBatch b)
 		{
@@ -524,12 +349,6 @@ namespace MultipleMiniObelisks.UI
 				}
 			}
 
-			if (this.NeedsScroll())
-			{
-				this.upArrow.draw(b);
-				this.downArrow.draw(b);
-				this.scrollBar.draw(b);
-			}
 			if (this.currentPage < this.pages.Count - 1 && this.questPage == -1)
 			{
 				this.forwardButton.draw(b);
