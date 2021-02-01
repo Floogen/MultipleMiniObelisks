@@ -32,13 +32,13 @@ namespace MultipleMiniObelisks.UI
 		private int questPage = -1;
 		private string obeliskNameDataKey = "PeacefulEnd.MultipleMiniObelisks/destination-name";
 
-		private List<StardewValley.Object> miniObelisks = new List<StardewValley.Object>();
+		private Dictionary<StardewValley.Object, GameLocation> miniObeliskToLocations = new Dictionary<StardewValley.Object, GameLocation>();
 		private StardewValley.Object sourceObelisk;
 
-		public TeleportMenu(StardewValley.Object sourceObelisk, List<StardewValley.Object> miniObelisks) : base(0, 0, 0, 0, showUpperRightCloseButton: true)
+		public TeleportMenu(StardewValley.Object sourceObelisk, Dictionary<StardewValley.Object, GameLocation> miniObeliskToLocations) : base(0, 0, 0, 0, showUpperRightCloseButton: true)
 		{
 			this.sourceObelisk = sourceObelisk;
-			this.miniObelisks = miniObelisks;
+			this.miniObeliskToLocations = miniObeliskToLocations;
 
 			Game1.playSound("bigSelect");
 			this.PaginateObelisks();
@@ -101,8 +101,8 @@ namespace MultipleMiniObelisks.UI
 		private void EnsureModDataKeyIsPresent()
 		{
 			// Not doing miniObelisks.Count - 1 so to avoid "... #0"
-			int count = miniObelisks.Count;
-			foreach (StardewValley.Object obelisk in miniObelisks)
+			int count = miniObeliskToLocations.Count;
+			foreach (StardewValley.Object obelisk in miniObeliskToLocations.Keys)
 			{
 				if (!obelisk.modData.ContainsKey(obeliskNameDataKey))
 				{
@@ -118,16 +118,16 @@ namespace MultipleMiniObelisks.UI
 			// Ensure all mini-obelisks have the required modData
 			EnsureModDataKeyIsPresent();
 
-			int count = miniObelisks.Count - 1;
+			int count = miniObeliskToLocations.Count - 1;
 			this.pages = new List<List<StardewValley.Object>>();
-			foreach (StardewValley.Object obelisk in miniObelisks.OrderBy(o => o.modData[obeliskNameDataKey]))
+			foreach (StardewValley.Object obelisk in miniObeliskToLocations.Keys.OrderBy(o => o.modData[obeliskNameDataKey]))
 			{
 				if (obelisk is null)
 				{
 					continue;
 				}
 
-				int which2 = miniObelisks.Count - 1 - count;
+				int which2 = miniObeliskToLocations.Count - 1 - count;
 				while (this.pages.Count <= which2 / 6)
 				{
 					this.pages.Add(new List<StardewValley.Object>());
@@ -147,7 +147,14 @@ namespace MultipleMiniObelisks.UI
 
 		private bool AttemptTeleport(Farmer who, StardewValley.Object obelisk)
 		{
+			if (obelisk == sourceObelisk)
+            {
+				Game1.showRedMessage("You're already there!");
+				return false;
+			}
+
 			Vector2 target = obelisk.TileLocation;
+			GameLocation obeliskLocation = miniObeliskToLocations[obelisk];
 			foreach (Vector2 v in new List<Vector2>
 			{
 				new Vector2(target.X, target.Y + 1f),
@@ -156,27 +163,43 @@ namespace MultipleMiniObelisks.UI
 				new Vector2(target.X, target.Y - 1f)
 			})
 			{
-				if (who.currentLocation.isTileLocationTotallyClearAndPlaceableIgnoreFloors(v))
+				if (obeliskLocation.isTileLocationTotallyClearAndPlaceableIgnoreFloors(v))
 				{
 					for (int i = 0; i < 12; i++)
 					{
-						who.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite(354, Game1.random.Next(25, 75), 6, 1, new Vector2(Game1.random.Next((int)who.Position.X - 256, (int)who.Position.X + 192), Game1.random.Next((int)who.Position.Y - 256, (int)who.Position.Y + 192)), flicker: false, (Game1.random.NextDouble() < 0.5) ? true : false));
+						who.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite(354, Game1.random.Next(25, 75), 6, 1, new Vector2(Game1.random.Next((int)who.position.X - 256, (int)who.position.X + 192), Game1.random.Next((int)who.position.Y - 256, (int)who.position.Y + 192)), flicker: false, (Game1.random.NextDouble() < 0.5) ? true : false));
 					}
-					who.currentLocation.playSound("wand");
+					obeliskLocation.playSound("wand");
 					Game1.displayFarmer = false;
-					Game1.player.freezePause = 800;
+					who.temporarilyInvincible = true;
+					who.temporaryInvincibilityTimer = -2000;
+					who.Halt();
+					who.faceDirection(2);
+					who.CanMove = false;
+					who.freezePause = 2000;
 					Game1.flashAlpha = 1f;
-					DelayedAction.fadeAfterDelay(delegate
-					{
-						who.setTileLocation(v);
+					DelayedAction.fadeAfterDelay(delegate {
+						Game1.warpFarmer(obeliskLocation.NameOrUniqueName, (int)v.X, (int)v.Y, flip: false);
+						if (!Game1.isStartingToGetDarkOut() && !Game1.isRaining)
+						{
+							Game1.playMorningSong();
+						}
+						else
+						{
+							Game1.changeMusicTrack("none");
+						}
+						Game1.fadeToBlackAlpha = 0.99f;
+						Game1.screenGlow = false;
+						who.temporarilyInvincible = false;
+						who.temporaryInvincibilityTimer = 0;
 						Game1.displayFarmer = true;
-						Game1.globalFadeToClear();
-					}, 800);
+						who.CanMove = true;
+					}, 1000);
 					new Rectangle(who.GetBoundingBox().X, who.GetBoundingBox().Y, 64, 64).Inflate(192, 192);
 					int j = 0;
-					for (int x = who.getTileX() + 8; x >= who.getTileX() - 8; x--)
+					for (int xTile = who.getTileX() + 8; xTile >= who.getTileX() - 8; xTile--)
 					{
-						who.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite(6, new Vector2(x, who.getTileY()) * 64f, Color.White, 8, flipped: false, 50f)
+						obeliskLocation.temporarySprites.Add(new TemporaryAnimatedSprite(6, new Vector2(xTile, who.getTileY()) * 64f, Color.White, 8, flipped: false, 50f)
 						{
 							layerDepth = 1f,
 							delayBeforeAnimationStart = j * 25,
