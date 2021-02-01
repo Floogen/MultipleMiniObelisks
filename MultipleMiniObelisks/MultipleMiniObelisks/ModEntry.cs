@@ -16,6 +16,9 @@ namespace MultipleMiniObelisks
             // Load the monitor
             ModResources.LoadMonitor(this.Monitor);
 
+            // Load the config
+            ModResources.LoadConfig(helper.ReadConfig<ModConfig>());
+
             // Load our Harmony patches
             try
             {
