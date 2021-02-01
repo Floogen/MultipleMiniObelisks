@@ -30,15 +30,15 @@ namespace MultipleMiniObelisks.Patches
 					return false;
 				}
 
-                List<Object> miniObelisks = new List<Object>();
+                Dictionary<Object, GameLocation> miniObeliskToLocation = new Dictionary<Object, GameLocation>();
                 foreach (GameLocation location in Game1.locations.Where(l => l.numberOfObjectsOfType(238, true) > 0))
                 {
                     foreach (var tileToObject in location.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238))
                     {
-                        miniObelisks.Add(tileToObject.Value);
+                        miniObeliskToLocation.Add(tileToObject.Value, location);
                     }
                 }
-                Game1.activeClickableMenu = new TeleportMenu(__instance, miniObelisks);
+                Game1.activeClickableMenu = new TeleportMenu(__instance, miniObeliskToLocation);
 
                 __result = true;
                 return false;
