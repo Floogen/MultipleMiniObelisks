@@ -47,9 +47,9 @@ namespace MultipleMiniObelisks.UI
 			this.title = title;
 
 			this.textBox = new TextBox(null, null, Game1.dialogueFont, Game1.textColor);
-			this.textBox.X = Game1.uiViewport.Width / 2 - 192;
+			this.textBox.X = Game1.uiViewport.Width / 2 - ((Game1.uiViewport.Width / 6) / 2);
 			this.textBox.Y = Game1.uiViewport.Height / 2;
-			this.textBox.Width = 256;
+			this.textBox.Width = Game1.uiViewport.Width / 6;
 			this.textBox.Height = 192;
 			this.e = textBoxEnter;
 			this.textBox.OnEnterPressed += this.e;
@@ -63,7 +63,7 @@ namespace MultipleMiniObelisks.UI
 				rightNeighborID = 103,
 				leftNeighborID = 104
 			};
-			this.textBoxCC = new ClickableComponent(new Rectangle(this.textBox.X, this.textBox.Y, 192, 48), "")
+			this.textBoxCC = new ClickableComponent(new Rectangle(this.textBox.X, this.textBox.Y, textBox.Width, textBox.Height), "")
 			{
 				myID = 104,
 				rightNeighborID = 102
