@@ -150,6 +150,7 @@ namespace MultipleMiniObelisks.UI
 			if (obelisk == sourceObelisk)
             {
 				Game1.showRedMessage("You're already there!");
+				Game1.playSound("bigDeSelect");
 				return false;
 			}
 
@@ -169,7 +170,7 @@ namespace MultipleMiniObelisks.UI
 					{
 						who.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite(354, Game1.random.Next(25, 75), 6, 1, new Vector2(Game1.random.Next((int)who.position.X - 256, (int)who.position.X + 192), Game1.random.Next((int)who.position.Y - 256, (int)who.position.Y + 192)), flicker: false, (Game1.random.NextDouble() < 0.5) ? true : false));
 					}
-					obeliskLocation.playSound("wand");
+					who.currentLocation.playSound("wand");
 					Game1.displayFarmer = false;
 					who.temporarilyInvincible = true;
 					who.temporaryInvincibilityTimer = -2000;
@@ -264,7 +265,7 @@ namespace MultipleMiniObelisks.UI
 		public override void receiveKeyPress(Keys key)
 		{
 			base.receiveKeyPress(key);
-			if (Game1.options.doesInputListContain(Game1.options.journalButton, key) && this.readyToClose())
+			if (Game1.options.doesInputListContain(Game1.options.cancelButton, key) && this.readyToClose())
 			{
 				Game1.exitActiveMenu();
 				Game1.playSound("bigDeSelect");
@@ -306,7 +307,7 @@ namespace MultipleMiniObelisks.UI
 			base.applyMovementKey(direction);
 		}
 
-		public override void receiveLeftClick(int x, int y, bool playSound = true)
+		public override void receiveLeftClick(int x, int y, bool playSound = false)
 		{
 			base.receiveLeftClick(x, y, playSound);
 			if (Game1.activeClickableMenu == null)
