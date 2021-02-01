@@ -53,6 +53,8 @@
   <ItemGroup>
     <Compile Include="MultipleMiniObelisks\ModEntry.cs" />
     <Compile Include="MultipleMiniObelisks\ModResources.cs" />
+    <Compile Include="MultipleMiniObelisks\Patches\ObjectCheckForActionPatch.cs" />
+    <Compile Include="MultipleMiniObelisks\Patches\ObjectPlacementActionPatch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
