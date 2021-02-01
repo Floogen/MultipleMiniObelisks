@@ -1,0 +1,11 @@
+﻿{
+  "Name": "MultipleMiniObelisks",
+  "Author": "PeacefulEnd",
+  "Version": "REPLACE_ME_WITH_VERSION",
+  "Description": "Allows you to place more than 2 mini-obelisks.",
+  "UniqueID": "PeacefulEnd.MultipleMiniObelisks",
+  "EntryDll": "MultipleMiniObelisks.dll",
+  "MinimumApiVersion": "3.0.0",
+  "UpdateKeys": [ "Nexus:????" ],
+  "Dependencies": []
+}
