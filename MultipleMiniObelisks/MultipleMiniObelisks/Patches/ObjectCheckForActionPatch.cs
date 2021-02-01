@@ -38,7 +38,7 @@ namespace MultipleMiniObelisks.Patches
                         miniObelisks.Add(tileToObject.Value);
                     }
                 }
-                Game1.activeClickableMenu = new TeleportMenu(miniObelisks);
+                Game1.activeClickableMenu = new TeleportMenu(__instance, miniObelisks);
 
                 __result = true;
                 return false;
