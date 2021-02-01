@@ -64,7 +64,7 @@ namespace MultipleMiniObelisks.UI
 					myID = i,
 					downNeighborID = -7777,
 					upNeighborID = ((i > 0) ? (i - 1) : (-1)),
-					rightNeighborID = -7777,
+					rightNeighborID = i + 103,
 					leftNeighborID = -7777,
 					fullyImmutable = true
 				};
@@ -216,6 +216,60 @@ namespace MultipleMiniObelisks.UI
 			Game1.showRedMessage(Game1.content.LoadString("Strings\\StringsFromCSFiles:MiniObelisk_NeedsSpace"));
 			return false;
 		}
+		protected override void customSnapBehavior(int direction, int oldRegion, int oldID)
+		{
+			if (oldID >= 0 && oldID != 101 && oldID != 102)
+			{
+				switch (direction)
+				{
+					case 2:
+						if (oldID < 5 && this.pages[this.currentPage].Count - 1 > oldID)
+						{
+							base.currentlySnappedComponent = base.getComponentWithID(oldID + 1);
+						}
+						else if (oldID > 6 && oldID < 108 && this.pages[this.currentPage].Count - 1 + 103 > oldID)
+                        {
+							base.currentlySnappedComponent = base.getComponentWithID(oldID + 1);
+						}
+						break;
+					case 1:
+						if (this.currentPage < this.pages.Count - 1 && oldID > 102)
+						{
+							base.currentlySnappedComponent = base.getComponentWithID(101);
+							base.currentlySnappedComponent.leftNeighborID = oldID;
+						}
+						else if (oldID < 6)
+						{
+							base.currentlySnappedComponent = base.getComponentWithID(oldID + 103);
+							base.currentlySnappedComponent.leftNeighborID = oldID;
+						}
+						break;
+					case 3:
+						if (this.currentPage > 0)
+						{
+							base.currentlySnappedComponent = base.getComponentWithID(102);
+							base.currentlySnappedComponent.rightNeighborID = oldID;
+						}
+						break;
+				}
+			}
+			else if (oldID == 102)
+			{
+				if (this.questPage != -1)
+				{
+					return;
+				}
+				base.currentlySnappedComponent = base.getComponentWithID(0);
+			}
+			this.snapCursorToCurrentSnappedComponent();
+		}
+
+		public override void snapToDefaultClickableComponent()
+		{
+			base.currentlySnappedComponent = base.getComponentWithID(0);
+			this.snapCursorToCurrentSnappedComponent();
+		}
+
 		public override void receiveGamePadButton(Buttons b)
 		{
 			if (b == Buttons.RightTrigger && this.questPage == -1 && this.currentPage < this.pages.Count - 1)
