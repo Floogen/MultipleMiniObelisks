@@ -31,6 +31,10 @@ namespace MultipleMiniObelisks.Patches
 				}
 
                 Object toPlace = (Object)__instance.getOne();
+                toPlace.shakeTimer = 50;
+                toPlace.tileLocation.Value = placementTile;
+                toPlace.performDropDownAction(who);
+
                 location.objects.Add(placementTile, toPlace);
                 toPlace.initializeLightSource(placementTile);
                 location.playSound("woodyStep");
