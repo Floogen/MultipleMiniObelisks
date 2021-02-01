@@ -55,6 +55,7 @@
     <Compile Include="MultipleMiniObelisks\ModResources.cs" />
     <Compile Include="MultipleMiniObelisks\Patches\ObjectCheckForActionPatch.cs" />
     <Compile Include="MultipleMiniObelisks\Patches\ObjectPlacementActionPatch.cs" />
+    <Compile Include="MultipleMiniObelisks\UI\RenameMenu.cs" />
     <Compile Include="MultipleMiniObelisks\UI\TeleportMenu.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
