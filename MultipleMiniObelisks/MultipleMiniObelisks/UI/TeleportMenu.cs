@@ -26,6 +26,7 @@ namespace MultipleMiniObelisks.UI
 		private List<List<StardewValley.Object>> pages;
 
 		public List<ClickableComponent> teleportDestinationButtons;
+		public List<ClickableTextureComponent> renameObeliskButtons;
 
 		private int currentPage;
 
@@ -34,10 +35,6 @@ namespace MultipleMiniObelisks.UI
 		public ClickableTextureComponent forwardButton;
 
 		public ClickableTextureComponent backButton;
-
-		public ClickableTextureComponent rewardBox;
-
-		public ClickableTextureComponent cancelQuestButton;
 
 		protected IQuest _shownQuest;
 
@@ -80,10 +77,14 @@ namespace MultipleMiniObelisks.UI
 			Vector2 topLeft = Utility.getTopLeftPositionForCenteringOnScreen(base.width, base.height);
 			base.xPositionOnScreen = (int)topLeft.X;
 			base.yPositionOnScreen = (int)topLeft.Y + 32;
+
+			// Create the buttons used for teleporting and renaming
 			this.teleportDestinationButtons = new List<ClickableComponent>();
+			this.renameObeliskButtons = new List<ClickableTextureComponent>();
+
 			for (int i = 0; i < 6; i++)
 			{
-				this.teleportDestinationButtons.Add(new ClickableComponent(new Rectangle(base.xPositionOnScreen + 16, base.yPositionOnScreen + 16 + i * ((base.height - 32) / 6), base.width - 32, (base.height - 32) / 6 + 4), string.Concat(i))
+				ClickableComponent teleportButton = new ClickableComponent(new Rectangle(base.xPositionOnScreen + 16, base.yPositionOnScreen + 16 + i * ((base.height - 32) / 6), base.width - 32, (base.height - 32) / 6 + 4), string.Concat(i))
 				{
 					myID = i,
 					downNeighborID = -7777,
@@ -91,6 +92,16 @@ namespace MultipleMiniObelisks.UI
 					rightNeighborID = -7777,
 					leftNeighborID = -7777,
 					fullyImmutable = true
+				};
+				this.teleportDestinationButtons.Add(teleportButton);
+
+				this.renameObeliskButtons.Add(new ClickableTextureComponent(new Rectangle(teleportButton.bounds.Right - teleportButton.bounds.Width / 8, teleportButton.bounds.Y + teleportButton.bounds.Height / 4, 32, 32), Game1.mouseCursors, new Rectangle(66, 4, 14, 12), 4f)
+				{
+					myID = i + 103,
+					downNeighborID = -7777,
+					upNeighborID = ((i > 0) ? (i + 103 - 1) : (-1)),
+					rightNeighborID = -7777,
+					leftNeighborID = i
 				});
 			}
 			base.upperRightCloseButton = new ClickableTextureComponent(new Rectangle(base.xPositionOnScreen + base.width - 20, base.yPositionOnScreen - 8, 48, 48), Game1.mouseCursors, new Rectangle(337, 494, 12, 12), 4f);
@@ -103,14 +114,7 @@ namespace MultipleMiniObelisks.UI
 			{
 				myID = 101
 			};
-			this.rewardBox = new ClickableTextureComponent(new Rectangle(base.xPositionOnScreen + base.width / 2 - 80, base.yPositionOnScreen + base.height - 32 - 96, 96, 96), Game1.mouseCursors, new Rectangle(293, 360, 24, 24), 4f, drawShadow: true)
-			{
-				myID = 103
-			};
-			this.cancelQuestButton = new ClickableTextureComponent(new Rectangle(base.xPositionOnScreen + 4, base.yPositionOnScreen + base.height + 4, 48, 48), Game1.mouseCursors, new Rectangle(322, 498, 12, 12), 4f, drawShadow: true)
-			{
-				myID = 104
-			};
+
 			int scrollbar_x = base.xPositionOnScreen + base.width + 16;
 			this.upArrow = new ClickableTextureComponent(new Rectangle(scrollbar_x, base.yPositionOnScreen + 96, 44, 48), Game1.mouseCursors, new Rectangle(421, 459, 11, 12), 4f);
 			this.downArrow = new ClickableTextureComponent(new Rectangle(scrollbar_x, base.yPositionOnScreen + base.height - 64, 44, 48), Game1.mouseCursors, new Rectangle(421, 472, 11, 12), 4f);
@@ -247,10 +251,6 @@ namespace MultipleMiniObelisks.UI
 			base.receiveScrollWheelAction(direction);
 		}
 
-		public override void receiveRightClick(int x, int y, bool playSound = true)
-		{
-		}
-
 		public override void performHoverAction(int x, int y)
 		{
 			this.hoverText = "";
@@ -259,19 +259,16 @@ namespace MultipleMiniObelisks.UI
 			{
 				for (int i = 0; i < this.teleportDestinationButtons.Count; i++)
 				{
-					if (this.pages.Count > 0 && this.pages[0].Count > i && this.teleportDestinationButtons[i].containsPoint(x, y) && !this.teleportDestinationButtons[i].containsPoint(Game1.getOldMouseX(), Game1.getOldMouseY()))
-					{
-						Game1.playSound("Cowboy_gunshot");
+					if (this.pages.Count > 0 && this.pages[0].Count > i && this.renameObeliskButtons[i].containsPoint(x, y))
+                    {
+						this.hoverText = "Rename Obelisk";
 					}
 				}
 			}
-			else if (this._shownQuest.CanBeCancelled() && this.cancelQuestButton.containsPoint(x, y))
-			{
-				this.hoverText = Game1.content.LoadString("Strings\\StringsFromCSFiles:QuestLog.cs.11364");
-			}
+
 			this.forwardButton.tryHover(x, y, 0.2f);
 			this.backButton.tryHover(x, y, 0.2f);
-			this.cancelQuestButton.tryHover(x, y, 0.2f);
+
 			if (this.NeedsScroll())
 			{
 				this.upArrow.tryHover(x, y);
@@ -283,14 +280,7 @@ namespace MultipleMiniObelisks.UI
 
 		public override void receiveKeyPress(Keys key)
 		{
-			if (Game1.isAnyGamePadButtonBeingPressed() && this.questPage != -1 && Game1.options.doesInputListContain(Game1.options.menuButton, key))
-			{
-				this.exitQuestPage();
-			}
-			else
-			{
-				base.receiveKeyPress(key);
-			}
+			base.receiveKeyPress(key);
 			if (Game1.options.doesInputListContain(Game1.options.journalButton, key) && this.readyToClose())
 			{
 				Game1.exitActiveMenu();
@@ -489,36 +479,21 @@ namespace MultipleMiniObelisks.UI
 			return false;
 		}
 
-		public void exitQuestPage()
-		{
-			if (this._shownQuest.OnLeaveQuestPage())
-			{
-				this.pages[this.currentPage].RemoveAt(this.questPage);
-			}
-			this.questPage = -1;
-			this.paginateQuests();
-			Game1.playSound("shwip");
-			if (Game1.options.SnappyMenus)
-			{
-				this.snapToDefaultClickableComponent();
-			}
-		}
-
 		public override void draw(SpriteBatch b)
 		{
 			b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.75f);
-			SpriteText.drawStringWithScrollCenteredAt(b, Game1.content.LoadString("Strings\\StringsFromCSFiles:QuestLog.cs.11373"), base.xPositionOnScreen + base.width / 2, base.yPositionOnScreen - 64);
+			SpriteText.drawStringWithScrollCenteredAt(b, "Choose a Destination", base.xPositionOnScreen + base.width / 2, base.yPositionOnScreen - 64);
 			IClickableMenu.drawTextureBox(b, Game1.mouseCursors, new Rectangle(384, 373, 18, 18), base.xPositionOnScreen, base.yPositionOnScreen, base.width, base.height, Color.White, 4f);
-			if (this.questPage == -1)
+			for (int j = 0; j < this.teleportDestinationButtons.Count; j++)
 			{
-				for (int j = 0; j < this.teleportDestinationButtons.Count; j++)
+				if (this.pages.Count() > 0 && this.pages[this.currentPage].Count() > j)
 				{
-					if (this.pages.Count() > 0 && this.pages[this.currentPage].Count() > j)
-					{
-						IClickableMenu.drawTextureBox(b, Game1.mouseCursors, new Rectangle(384, 396, 15, 15), this.teleportDestinationButtons[j].bounds.X, this.teleportDestinationButtons[j].bounds.Y, this.teleportDestinationButtons[j].bounds.Width, this.teleportDestinationButtons[j].bounds.Height, this.teleportDestinationButtons[j].containsPoint(Game1.getOldMouseX(), Game1.getOldMouseY()) ? Color.Wheat : Color.White, 4f, drawShadow: false);
-						Utility.drawWithShadow(b, Game1.objectSpriteSheet, new Vector2(this.teleportDestinationButtons[j].bounds.X + 32, this.teleportDestinationButtons[j].bounds.Y + 28), new Rectangle(0, 512, 16, 16), Color.White, 0f, Vector2.Zero, 2f, flipped: false, 0.99f, shadowIntensity: 0f);
-						SpriteText.drawString(b, this.pages[this.currentPage][j].DisplayName, this.teleportDestinationButtons[j].bounds.X + 128 + 4, this.teleportDestinationButtons[j].bounds.Y + 20);
-					}
+					IClickableMenu.drawTextureBox(b, Game1.mouseCursors, new Rectangle(384, 396, 15, 15), this.teleportDestinationButtons[j].bounds.X, this.teleportDestinationButtons[j].bounds.Y, this.teleportDestinationButtons[j].bounds.Width, this.teleportDestinationButtons[j].bounds.Height, this.teleportDestinationButtons[j].containsPoint(Game1.getOldMouseX(), Game1.getOldMouseY()) ? Color.Wheat : Color.White, 4f, drawShadow: false);
+					Utility.drawWithShadow(b, Game1.objectSpriteSheet, new Vector2(this.teleportDestinationButtons[j].bounds.X + 32, this.teleportDestinationButtons[j].bounds.Y + 28), new Rectangle(0, 512, 16, 16), Color.White, 0f, Vector2.Zero, 2f, flipped: false, 0.99f, shadowIntensity: 0f);
+					SpriteText.drawString(b, this.pages[this.currentPage][j].DisplayName, this.teleportDestinationButtons[j].bounds.X + 128 + 4, this.teleportDestinationButtons[j].bounds.Y + 20);
+
+					// Draw the rename button
+					this.renameObeliskButtons[j].draw(b);
 				}
 			}
 
@@ -536,9 +511,11 @@ namespace MultipleMiniObelisks.UI
 			{
 				this.backButton.draw(b);
 			}
+
 			base.draw(b);
 			Game1.mouseCursorTransparency = 1f;
 			base.drawMouse(b);
+
 			if (this.hoverText.Length > 0)
 			{
 				IClickableMenu.drawHoverText(b, this.hoverText, Game1.dialogueFont);
