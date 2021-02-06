@@ -21,14 +21,14 @@ namespace MultipleMiniObelisks.Patches
 
         internal static bool Prefix(Object __instance, ref bool __result, GameLocation location, int x, int y, Farmer who = null)
         {
-			// 238 is Mini-Obelisks
-			if (__instance.ParentSheetIndex == 238)
+            // 238 is Mini-Obelisks
+            if (__instance.ParentSheetIndex == 238)
             {
                 Vector2 placementTile = new Vector2(x / 64, y / 64);
 
                 if (!(location is Farm) && !config.AllowMiniObelisksToBePlacedAnywhere)
-				{
-					Game1.showRedMessage(Game1.content.LoadString("Strings\\StringsFromCSFiles:OnlyPlaceOnFarm"));
+                {
+                    Game1.showRedMessage(Game1.content.LoadString("Strings\\StringsFromCSFiles:OnlyPlaceOnFarm"));
                     __result = false;
                     return false;
                 }
@@ -44,7 +44,7 @@ namespace MultipleMiniObelisks.Patches
 
                 __result = true;
                 return false;
-			}
+            }
 
             return true;
         }

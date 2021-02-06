@@ -25,10 +25,10 @@ namespace MultipleMiniObelisks.Patches
             // 238 is Mini-Obelisks
             if (__instance.ParentSheetIndex == 238)
             {
-				if (justCheckingForActivity)
-				{
-					return false;
-				}
+                if (justCheckingForActivity)
+                {
+                    return false;
+                }
 
                 Dictionary<Object, GameLocation> miniObeliskToLocation = new Dictionary<Object, GameLocation>();
                 foreach (GameLocation location in Game1.locations.Where(l => l.numberOfObjectsOfType(238, true) > 0))
@@ -42,7 +42,7 @@ namespace MultipleMiniObelisks.Patches
 
                 __result = true;
                 return false;
-			}
+            }
 
             return true;
         }
