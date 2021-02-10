@@ -7,6 +7,8 @@ using StardewValley.Menus;
 using System.Linq;
 using System.Collections.Generic;
 using MultipleMiniObelisks.UI;
+using StardewValley.Locations;
+using StardewValley.Buildings;
 
 namespace MultipleMiniObelisks.Patches
 {
@@ -31,11 +33,34 @@ namespace MultipleMiniObelisks.Patches
                 }
 
                 Dictionary<Object, GameLocation> miniObeliskToLocation = new Dictionary<Object, GameLocation>();
-                foreach (GameLocation location in Game1.locations.Where(l => l.numberOfObjectsOfType(238, true) > 0))
+                foreach (GameLocation location in Game1.locations)
                 {
-                    foreach (var tileToObject in location.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238))
+                    if (location.numberOfObjectsOfType(238, true) > 0)
                     {
-                        miniObeliskToLocation.Add(tileToObject.Value, location);
+                        foreach (var tileToObject in location.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
+                        {
+                            miniObeliskToLocation.Add(tileToObject.Value, location);
+                        }
+                    }
+
+                    if (location is BuildableGameLocation)
+                    {
+                        foreach (Building b2 in (location as BuildableGameLocation).buildings)
+                        {
+                            GameLocation indoorLocation = b2.indoors.Value;
+                            if (indoorLocation is null)
+                            {
+                                continue;
+                            }
+
+                            if (indoorLocation.numberOfObjectsOfType(238, true) > 0)
+                            {
+                                foreach (var tileToObject in indoorLocation.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
+                                {
+                                    miniObeliskToLocation.Add(tileToObject.Value, indoorLocation);
+                                }
+                            }
+                        }
                     }
                 }
                 Game1.activeClickableMenu = new TeleportMenu(__instance, miniObeliskToLocation);
