@@ -4,6 +4,9 @@ using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MultipleMiniObelisks.Multiplayer;
+using MultipleMiniObelisks.Objects;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.BellsAndWhistles;
 using StardewValley.Menus;
@@ -19,7 +22,7 @@ namespace MultipleMiniObelisks.UI
         public const int region_backButton = 102;
 
         // UI related
-        private List<List<StardewValley.Object>> pages;
+        private List<List<MiniObelisk>> pages;
         public List<ClickableComponent> teleportDestinationButtons;
         public List<ClickableTextureComponent> renameObeliskButtons;
         public ClickableTextureComponent forwardButton;
@@ -30,15 +33,14 @@ namespace MultipleMiniObelisks.UI
         // Logic related
         private int currentPage;
         private int questPage = -1;
-        private string obeliskNameDataKey = "PeacefulEnd.MultipleMiniObelisks/destination-name";
 
-        private Dictionary<StardewValley.Object, GameLocation> miniObeliskToLocations = new Dictionary<StardewValley.Object, GameLocation>();
+        private List<MiniObelisk> miniObelisks = new List<MiniObelisk>();
         private StardewValley.Object sourceObelisk;
 
-        public TeleportMenu(StardewValley.Object sourceObelisk, Dictionary<StardewValley.Object, GameLocation> miniObeliskToLocations) : base(0, 0, 0, 0, showUpperRightCloseButton: true)
+        public TeleportMenu(StardewValley.Object sourceObelisk, List<MiniObelisk> miniObelisks) : base(0, 0, 0, 0, showUpperRightCloseButton: true)
         {
             this.sourceObelisk = sourceObelisk;
-            this.miniObeliskToLocations = miniObeliskToLocations;
+            this.miniObelisks = miniObelisks;
 
             Game1.playSound("bigSelect");
             this.PaginateObelisks();
@@ -101,12 +103,12 @@ namespace MultipleMiniObelisks.UI
         private void EnsureModDataKeyIsPresent()
         {
             // Not doing miniObelisks.Count - 1 so to avoid "... #0"
-            int count = miniObeliskToLocations.Count;
-            foreach (StardewValley.Object obelisk in miniObeliskToLocations.Keys)
+            int count = miniObelisks.Count;
+            foreach (MiniObelisk obelisk in miniObelisks)
             {
-                if (!obelisk.modData.ContainsKey(obeliskNameDataKey))
+                if (String.IsNullOrEmpty(obelisk.CustomName))
                 {
-                    obelisk.modData.Add(obeliskNameDataKey, string.Concat(obelisk.Name, " #", count));
+                    obelisk.CustomName = string.Concat("Mini-Obelisk #", count);
                 }
 
                 count--;
@@ -118,19 +120,19 @@ namespace MultipleMiniObelisks.UI
             // Ensure all mini-obelisks have the required modData
             EnsureModDataKeyIsPresent();
 
-            int count = miniObeliskToLocations.Count - 1;
-            this.pages = new List<List<StardewValley.Object>>();
-            foreach (StardewValley.Object obelisk in miniObeliskToLocations.Keys.OrderBy(o => o.modData[obeliskNameDataKey]))
+            int count = miniObelisks.Count - 1;
+            this.pages = new List<List<MiniObelisk>>();
+            foreach (MiniObelisk obelisk in miniObelisks.OrderBy(o => o.CustomName))
             {
                 if (obelisk is null)
                 {
                     continue;
                 }
 
-                int which2 = miniObeliskToLocations.Count - 1 - count;
+                int which2 = miniObelisks.Count - 1 - count;
                 while (this.pages.Count <= which2 / 6)
                 {
-                    this.pages.Add(new List<StardewValley.Object>());
+                    this.pages.Add(new List<MiniObelisk>());
                 }
                 this.pages[which2 / 6].Add(obelisk);
 
@@ -139,23 +141,30 @@ namespace MultipleMiniObelisks.UI
 
             if (this.pages.Count == 0)
             {
-                this.pages.Add(new List<StardewValley.Object>());
+                this.pages.Add(new List<MiniObelisk>());
             }
             this.currentPage = Math.Min(Math.Max(this.currentPage, 0), this.pages.Count - 1);
             this.questPage = -1;
         }
 
-        private bool AttemptTeleport(Farmer who, StardewValley.Object obelisk)
+        private void AttemptTeleport(Farmer who, MiniObelisk obelisk)
         {
-            if (obelisk == sourceObelisk)
+            if (obelisk.Tile == sourceObelisk.TileLocation && obelisk.LocationName == who.currentLocation.NameOrUniqueName)
             {
                 Game1.showRedMessage("You're already there!");
                 Game1.playSound("bigDeSelect");
-                return false;
+                return;
             }
 
-            Vector2 target = obelisk.TileLocation;
-            GameLocation obeliskLocation = miniObeliskToLocations[obelisk];
+            if (!Context.IsMainPlayer)
+            {
+                var teleportRequestMessage = new ObeliskTeleportRequestMessage(obelisk, who.UniqueMultiplayerID);
+                ModEntry.helper.Multiplayer.SendMessage(teleportRequestMessage, nameof(ObeliskTeleportRequestMessage), modIDs: new[] { ModEntry.manifest.UniqueID });
+                return;
+            }
+
+            Vector2 target = obelisk.Tile;
+            GameLocation obeliskLocation = Game1.getLocationFromName(obelisk.LocationName);
             foreach (Vector2 v in new List<Vector2>
             {
                 new Vector2(target.X, target.Y + 1f),
@@ -210,12 +219,12 @@ namespace MultipleMiniObelisks.UI
                         j++;
                     }
 
-                    return true;
+                    return;
                 }
             }
 
             Game1.showRedMessage(Game1.content.LoadString("Strings\\StringsFromCSFiles:MiniObelisk_NeedsSpace"));
-            return false;
+            return;
         }
         protected override void customSnapBehavior(int direction, int oldRegion, int oldID)
         {
@@ -412,8 +421,8 @@ namespace MultipleMiniObelisks.UI
                 if (this.pages.Count() > 0 && this.pages[this.currentPage].Count() > j)
                 {
                     IClickableMenu.drawTextureBox(b, Game1.mouseCursors, new Rectangle(384, 396, 15, 15), this.teleportDestinationButtons[j].bounds.X, this.teleportDestinationButtons[j].bounds.Y, this.teleportDestinationButtons[j].bounds.Width, this.teleportDestinationButtons[j].bounds.Height, this.teleportDestinationButtons[j].containsPoint(Game1.getOldMouseX(), Game1.getOldMouseY()) ? Color.Wheat : Color.White, 4f, drawShadow: false);
-                    Utility.drawWithShadow(b, Game1.objectSpriteSheet, new Vector2(this.teleportDestinationButtons[j].bounds.X + 32, this.teleportDestinationButtons[j].bounds.Y + 28), new Rectangle(0, 512, 16, 16), sourceObelisk == this.pages[this.currentPage][j] ? Color.White : Color.Gray, 0f, Vector2.Zero, 2f, flipped: false, 0.99f, shadowIntensity: 0f);
-                    SpriteText.drawString(b, this.pages[this.currentPage][j].modData[obeliskNameDataKey], this.teleportDestinationButtons[j].bounds.X + 128 + 4, this.teleportDestinationButtons[j].bounds.Y + 20);
+                    Utility.drawWithShadow(b, Game1.objectSpriteSheet, new Vector2(this.teleportDestinationButtons[j].bounds.X + 32, this.teleportDestinationButtons[j].bounds.Y + 28), new Rectangle(0, 512, 16, 16), sourceObelisk.TileLocation == this.pages[this.currentPage][j].Tile && Game1.player.currentLocation.NameOrUniqueName == this.pages[this.currentPage][j].LocationName ? Color.White : Color.Gray, 0f, Vector2.Zero, 2f, flipped: false, 0.99f, shadowIntensity: 0f);
+                    SpriteText.drawString(b, this.pages[this.currentPage][j].CustomName, this.teleportDestinationButtons[j].bounds.X + 128 + 4, this.teleportDestinationButtons[j].bounds.Y + 20);
 
                     // Draw the rename button
                     this.renameObeliskButtons[j].draw(b);
