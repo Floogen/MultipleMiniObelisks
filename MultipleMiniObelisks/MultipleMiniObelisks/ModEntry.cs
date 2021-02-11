@@ -1,5 +1,13 @@
 ﻿using Harmony;
+using Microsoft.Xna.Framework;
+using MultipleMiniObelisks.Multiplayer;
+using MultipleMiniObelisks.Objects;
+using Newtonsoft.Json;
 using StardewModdingAPI;
+using StardewModdingAPI.Events;
+using StardewValley;
+using StardewValley.Buildings;
+using StardewValley.Locations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,6 +39,7 @@ namespace MultipleMiniObelisks
 
             // Set the ModData keys we'll be using
             ObeliskLocationsKey = $"{this.ModManifest.UniqueID}/obelisk-locations";
+            ObeliskNameDataKey = $"{this.ModManifest.UniqueID}/destination-name";
 
             // Load our Harmony patches
             try
@@ -45,6 +54,9 @@ namespace MultipleMiniObelisks
             }
             // Hook into ObjectListChanged to catch when Mini-Obelisks are placed / removed
             helper.Events.World.ObjectListChanged += this.OnObjectListChanged;
+
+            // Hook into save related events
+            helper.Events.GameLoop.DayStarted += this.OnDayStarted;
         private void OnObjectListChanged(object sender, ObjectListChangedEventArgs e)
         {
             if (!Context.IsMainPlayer)
@@ -79,6 +91,72 @@ namespace MultipleMiniObelisks
 
             Game1.player.modData[ObeliskLocationsKey] = JsonConvert.SerializeObject(miniObelisks);
         }
+
+        private void OnDayStarted(object sender, DayStartedEventArgs e)
+        {
+            UpdateObeliskCache();
+        }
+
+        internal static void UpdateObeliskCache()
+        {
+            if (!Context.IsMainPlayer)
+            {
+                return;
+            }
+
+            if (!Game1.player.modData.ContainsKey(ObeliskLocationsKey))
+            {
+                Game1.player.modData.Add(ObeliskLocationsKey, String.Empty);
+            }
+
+            List<MiniObelisk> miniObelisks = new List<MiniObelisk>();
+            foreach (GameLocation location in Game1.locations)
+            {
+                if (location.numberOfObjectsOfType(238, true) > 0)
+                {
+                    foreach (var tileToObject in location.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
+                    {
+                        StardewValley.Object obelisk = tileToObject.Value;
+                        if (!obelisk.modData.ContainsKey(ObeliskNameDataKey))
+                        {
+                            obelisk.modData.Add(ObeliskNameDataKey, String.Empty);
+                        }
+
+                        miniObelisks.Add(new MiniObelisk(location.NameOrUniqueName, tileToObject.Key, obelisk.modData[ObeliskNameDataKey]));
+                    }
+                }
+
+                if (location is BuildableGameLocation)
+                {
+                    foreach (Building b2 in (location as BuildableGameLocation).buildings)
+                    {
+                        GameLocation indoorLocation = b2.indoors.Value;
+                        if (indoorLocation is null)
+                        {
+                            continue;
+                        }
+
+                        if (indoorLocation.numberOfObjectsOfType(238, true) > 0)
+                        {
+                            foreach (var tileToObject in indoorLocation.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
+                            {
+                                StardewValley.Object obelisk = tileToObject.Value;
+                                if (!obelisk.modData.ContainsKey(ObeliskNameDataKey))
+                                {
+                                    obelisk.modData.Add(ObeliskNameDataKey, String.Empty);
+                                }
+
+                                miniObelisks.Add(new MiniObelisk(indoorLocation.NameOrUniqueName, tileToObject.Key, obelisk.modData[ObeliskNameDataKey]));
+                            }
+                        }
+                    }
+                }
+            }
+
+            monitor.Log(JsonConvert.SerializeObject(miniObelisks), LogLevel.Trace);
+            Game1.player.modData[ObeliskLocationsKey] = JsonConvert.SerializeObject(miniObelisks);
+        }
+        {
         }
     }
 }
