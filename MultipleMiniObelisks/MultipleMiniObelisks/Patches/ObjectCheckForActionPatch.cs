@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using MultipleMiniObelisks.UI;
 using StardewValley.Locations;
 using StardewValley.Buildings;
+using MultipleMiniObelisks.Objects;
 using Newtonsoft.Json;
 
 namespace MultipleMiniObelisks.Patches
@@ -33,38 +34,8 @@ namespace MultipleMiniObelisks.Patches
                     return false;
                 }
 
-                Dictionary<Object, GameLocation> miniObeliskToLocation = new Dictionary<Object, GameLocation>();
-                foreach (GameLocation location in Game1.locations)
-                {
-                    if (location.numberOfObjectsOfType(238, true) > 0)
-                    {
-                        foreach (var tileToObject in location.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
-                        {
-                            miniObeliskToLocation.Add(tileToObject.Value, location);
-                        }
-                    }
-
-                    if (location is BuildableGameLocation)
-                    {
-                        foreach (Building b2 in (location as BuildableGameLocation).buildings)
-                        {
-                            GameLocation indoorLocation = b2.indoors.Value;
-                            if (indoorLocation is null)
-                            {
-                                continue;
-                            }
-
-                            if (indoorLocation.numberOfObjectsOfType(238, true) > 0)
-                            {
-                                foreach (var tileToObject in indoorLocation.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
-                                {
-                                    miniObeliskToLocation.Add(tileToObject.Value, indoorLocation);
-                                }
-                            }
-                        }
-                    }
-                }
-                Game1.activeClickableMenu = new TeleportMenu(__instance, miniObeliskToLocation);
+                List<MiniObelisk> miniObelisks = JsonConvert.DeserializeObject<List<MiniObelisk>>(Game1.MasterPlayer.modData[ModEntry.ObeliskLocationsKey]);
+                Game1.activeClickableMenu = new TeleportMenu(__instance, miniObelisks);
 
                 __result = true;
                 return false;
