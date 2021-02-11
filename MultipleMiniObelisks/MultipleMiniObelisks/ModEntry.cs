@@ -52,11 +52,66 @@ namespace MultipleMiniObelisks
                 Monitor.Log($"Issue with Harmony patch: {e}", LogLevel.Error);
                 return;
             }
+
+            // Hook into ModMessageReceived
+            helper.Events.Multiplayer.ModMessageReceived += this.OnModMessageReceived;
+
             // Hook into ObjectListChanged to catch when Mini-Obelisks are placed / removed
             helper.Events.World.ObjectListChanged += this.OnObjectListChanged;
 
             // Hook into save related events
             helper.Events.GameLoop.DayStarted += this.OnDayStarted;
+        }
+
+        private void OnModMessageReceived(object sender, ModMessageReceivedEventArgs e)
+        {
+            if (e.FromModID != this.ModManifest.UniqueID)
+            {
+                return;
+            }
+
+            if (Context.IsMainPlayer)
+            {
+                if (e.Type == nameof(ObeliskUpdateMessage))
+                {
+                    ObeliskUpdateMessage message = e.ReadAs<ObeliskUpdateMessage>();
+
+                    Monitor.Log($"Received rename message: {message.Obelisk.CustomName} at {message.Obelisk.LocationName} [{message.Obelisk.Tile.X}, {message.Obelisk.Tile.Y}]", LogLevel.Trace);
+
+                    UpdateObeliskCustomName(message.Obelisk);
+                }
+                else if (e.Type == nameof(ObeliskTeleportRequestMessage))
+                {
+                    ObeliskTeleportRequestMessage message = e.ReadAs<ObeliskTeleportRequestMessage>();
+
+                    Monitor.Log($"Received teleport request message from {message.FarmerId} with destination: {message.Obelisk.CustomName} at {message.Obelisk.LocationName} [{message.Obelisk.Tile.X}, {message.Obelisk.Tile.Y}]", LogLevel.Trace);
+
+                    ValidateTeleportDestination(message.Obelisk, message.FarmerId);
+                }
+            }
+            else
+            {
+                if (e.Type == nameof(ObeliskTeleportStatusMessage))
+                {
+                    ObeliskTeleportStatusMessage message = e.ReadAs<ObeliskTeleportStatusMessage>();
+                    if (message.FarmerId != Game1.player.UniqueMultiplayerID)
+                    {
+                        return;
+                    }
+
+                    Monitor.Log($"Teleport request result: {message.DoTeleport}", LogLevel.Trace);
+
+                    if (message.DoTeleport)
+                    {
+                        TeleportPlayerToDestination(message.DestinationName, message.DestinationTile);
+                        return;
+                    }
+
+                    Game1.showRedMessage(Game1.content.LoadString("Strings\\StringsFromCSFiles:MiniObelisk_NeedsSpace"));
+                }
+            }
+        }
+
         private void OnObjectListChanged(object sender, ObjectListChangedEventArgs e)
         {
             if (!Context.IsMainPlayer)
@@ -94,6 +149,24 @@ namespace MultipleMiniObelisks
 
         private void OnDayStarted(object sender, DayStartedEventArgs e)
         {
+            UpdateObeliskCache();
+        }
+
+        internal static void UpdateObeliskCustomName(MiniObelisk miniObelisk)
+        {
+            monitor.Log($"Received rename message for Mini-Obelisk: {miniObelisk.CustomName} at {miniObelisk.LocationName} [{miniObelisk.Tile.X}, {miniObelisk.Tile.Y}]", LogLevel.Debug);
+
+            // Update the Obelisk's ModData[ObeliskNameDataKey]
+            GameLocation location = Game1.getLocationFromName(miniObelisk.LocationName);
+            StardewValley.Object obelisk = location.getObjectAtTile((int)miniObelisk.Tile.X, (int)miniObelisk.Tile.Y);
+
+            if (!obelisk.modData.ContainsKey(ObeliskNameDataKey))
+            {
+                obelisk.modData[ObeliskNameDataKey] = String.Empty;
+            }
+            obelisk.modData[ObeliskNameDataKey] = miniObelisk.CustomName;
+
+            // Update the MasterPlayer.ModData[ObeliskLocationsKey]
             UpdateObeliskCache();
         }
 
@@ -156,7 +229,77 @@ namespace MultipleMiniObelisks
             monitor.Log(JsonConvert.SerializeObject(miniObelisks), LogLevel.Trace);
             Game1.player.modData[ObeliskLocationsKey] = JsonConvert.SerializeObject(miniObelisks);
         }
+
+        internal static void ValidateTeleportDestination(MiniObelisk obelisk, long farmerId)
         {
+            Vector2 target = obelisk.Tile;
+            GameLocation obeliskLocation = Game1.getLocationFromName(obelisk.LocationName);
+            foreach (Vector2 v in new List<Vector2>
+            {
+                new Vector2(target.X, target.Y + 1f),
+                new Vector2(target.X - 1f, target.Y),
+                new Vector2(target.X + 1f, target.Y),
+                new Vector2(target.X, target.Y - 1f)
+            })
+            {
+                if (obeliskLocation.isTileLocationTotallyClearAndPlaceableIgnoreFloors(v))
+                {
+                    ModEntry.helper.Multiplayer.SendMessage(new ObeliskTeleportStatusMessage(obeliskLocation.NameOrUniqueName, v, farmerId, true), nameof(ObeliskTeleportStatusMessage), modIDs: new[] { ModEntry.manifest.UniqueID });
+                    return;
+                }
+            }
+
+            ModEntry.helper.Multiplayer.SendMessage(new ObeliskTeleportStatusMessage(obeliskLocation.NameOrUniqueName, obelisk.Tile, farmerId, false), nameof(ObeliskTeleportStatusMessage), modIDs: new[] { ModEntry.manifest.UniqueID });
+        }
+
+        internal static void TeleportPlayerToDestination(string destinationName, Vector2 destinationTile)
+        {
+            Farmer who = Game1.player;
+            GameLocation obeliskLocation = Game1.getLocationFromName(destinationName);
+
+            for (int i = 0; i < 12; i++)
+            {
+                who.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite(354, Game1.random.Next(25, 75), 6, 1, new Vector2(Game1.random.Next((int)who.position.X - 256, (int)who.position.X + 192), Game1.random.Next((int)who.position.Y - 256, (int)who.position.Y + 192)), flicker: false, (Game1.random.NextDouble() < 0.5) ? true : false));
+            }
+            who.currentLocation.playSound("wand");
+            Game1.displayFarmer = false;
+            who.temporarilyInvincible = true;
+            who.temporaryInvincibilityTimer = -2000;
+            who.Halt();
+            who.faceDirection(2);
+            who.CanMove = false;
+            who.freezePause = 2000;
+            Game1.flashAlpha = 1f;
+            DelayedAction.fadeAfterDelay(delegate
+            {
+                Game1.warpFarmer(obeliskLocation.NameOrUniqueName, (int)destinationTile.X, (int)destinationTile.Y, flip: false);
+                if (!Game1.isStartingToGetDarkOut() && !Game1.isRaining)
+                {
+                    Game1.playMorningSong();
+                }
+                else
+                {
+                    Game1.changeMusicTrack("none");
+                }
+                Game1.fadeToBlackAlpha = 0.99f;
+                Game1.screenGlow = false;
+                who.temporarilyInvincible = false;
+                who.temporaryInvincibilityTimer = 0;
+                Game1.displayFarmer = true;
+                who.CanMove = true;
+            }, 1000);
+            new Rectangle(who.GetBoundingBox().X, who.GetBoundingBox().Y, 64, 64).Inflate(192, 192);
+            int j = 0;
+            for (int xTile = who.getTileX() + 8; xTile >= who.getTileX() - 8; xTile--)
+            {
+                obeliskLocation.temporarySprites.Add(new TemporaryAnimatedSprite(6, new Vector2(xTile, who.getTileY()) * 64f, Color.White, 8, flipped: false, 50f)
+                {
+                    layerDepth = 1f,
+                    delayBeforeAnimationStart = j * 25,
+                    motion = new Vector2(-0.25f, 0f)
+                });
+                j++;
+            }
         }
     }
 }
