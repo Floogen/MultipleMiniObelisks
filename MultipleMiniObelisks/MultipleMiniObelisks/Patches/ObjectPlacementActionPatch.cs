@@ -11,8 +11,8 @@ namespace MultipleMiniObelisks.Patches
     [HarmonyPatch]
     public class ObjectPlacementActionPatch
     {
-        private static IMonitor monitor = ModResources.GetMonitor();
-        private static ModConfig config = ModResources.GetConfig();
+        private static IMonitor monitor = ModEntry.monitor;
+        private static ModConfig config = ModEntry.config;
 
         internal static MethodInfo TargetMethod()
         {

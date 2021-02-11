@@ -11,13 +11,26 @@ namespace MultipleMiniObelisks
 {
     public class ModEntry : Mod
     {
-        public override void Entry(IModHelper helper)
-        {
-            // Load the monitor
-            ModResources.LoadMonitor(this.Monitor);
+        // Monitor, Helper, Config
+        internal static IMonitor monitor;
+        internal static IModHelper helper;
+        internal static ModConfig config;
+        internal static IManifest manifest;
 
-            // Load the config
-            ModResources.LoadConfig(helper.ReadConfig<ModConfig>());
+        // ModData related
+        internal static string ObeliskLocationsKey;
+        internal static string ObeliskNameDataKey;
+
+        public override void Entry(IModHelper modHelper)
+        {
+            // Load the monitor, helper and config
+            monitor = this.Monitor;
+            helper = modHelper;
+            config = helper.ReadConfig<ModConfig>();
+            manifest = this.ModManifest;
+
+            // Set the ModData keys we'll be using
+            ObeliskLocationsKey = $"{this.ModManifest.UniqueID}/obelisk-locations";
 
             // Load our Harmony patches
             try

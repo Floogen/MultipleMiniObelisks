@@ -9,13 +9,14 @@ using System.Collections.Generic;
 using MultipleMiniObelisks.UI;
 using StardewValley.Locations;
 using StardewValley.Buildings;
+using Newtonsoft.Json;
 
 namespace MultipleMiniObelisks.Patches
 {
     [HarmonyPatch]
     public class ObjectCheckForActionPatch
     {
-        private static IMonitor monitor = ModResources.GetMonitor();
+        private static IMonitor monitor = ModEntry.monitor;
 
         internal static MethodInfo TargetMethod()
         {
