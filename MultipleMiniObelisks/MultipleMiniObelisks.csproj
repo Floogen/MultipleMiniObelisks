@@ -57,6 +57,9 @@
   <ItemGroup>
     <Compile Include="MultipleMiniObelisks\ModConfig.cs" />
     <Compile Include="MultipleMiniObelisks\ModEntry.cs" />
+    <Compile Include="MultipleMiniObelisks\Multiplayer\ObeliskTeleportStatusMessage.cs" />
+    <Compile Include="MultipleMiniObelisks\Multiplayer\ObeliskTeleportRequestMessage.cs" />
+    <Compile Include="MultipleMiniObelisks\Multiplayer\ObeliskUpdateMessage.cs" />
     <Compile Include="MultipleMiniObelisks\Patches\ObjectCheckForActionPatch.cs" />
     <Compile Include="MultipleMiniObelisks\Patches\ObjectPlacementActionPatch.cs" />
     <Compile Include="MultipleMiniObelisks\UI\RenameMenu.cs" />
