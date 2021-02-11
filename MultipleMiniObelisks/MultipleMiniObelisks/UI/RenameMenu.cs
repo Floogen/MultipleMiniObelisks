@@ -3,6 +3,9 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MultipleMiniObelisks.Multiplayer;
+using MultipleMiniObelisks.Objects;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.BellsAndWhistles;
 using StardewValley.Menus;
@@ -29,13 +32,11 @@ namespace MultipleMiniObelisks.UI
 
         protected int minLength = 1;
 
-        private StardewValley.Object obelisk;
-
-        private string obeliskNameDataKey = "PeacefulEnd.MultipleMiniObelisks/destination-name";
+        private MiniObelisk obelisk;
 
         private TeleportMenu parentMenu;
 
-        public RenameMenu(TeleportMenu parentMenu, string title, StardewValley.Object obelisk)
+        public RenameMenu(TeleportMenu parentMenu, string title, MiniObelisk obelisk)
         {
             this.obelisk = obelisk;
             this.parentMenu = parentMenu;
@@ -54,7 +55,7 @@ namespace MultipleMiniObelisks.UI
             this.e = textBoxEnter;
             this.textBox.OnEnterPressed += this.e;
             Game1.keyboardDispatcher.Subscriber = this.textBox;
-            this.textBox.Text = obelisk.modData.ContainsKey(obeliskNameDataKey) ? obelisk.modData[obeliskNameDataKey] : "";
+            this.textBox.Text = obelisk.CustomName;
             this.textBox.Selected = true;
 
             this.doneNamingButton = new ClickableTextureComponent(new Rectangle(this.textBox.X + this.textBox.Width + 32 + 4, Game1.uiViewport.Height / 2 - 8, 64, 64), Game1.mouseCursors, Game1.getSourceRectForStandardTileSheet(Game1.mouseCursors, 46), 1f)
@@ -91,12 +92,18 @@ namespace MultipleMiniObelisks.UI
                 }
                 else
                 {
-                    if (!this.obelisk.modData.ContainsKey(obeliskNameDataKey))
-                    {
-                        this.obelisk.modData.Add(obeliskNameDataKey, "");
-                    }
-                    this.obelisk.modData[obeliskNameDataKey] = this.textBox.Text;
+                    this.obelisk.CustomName = this.textBox.Text;
 
+                    if (Context.IsMainPlayer)
+                    {
+                        ModEntry.UpdateObeliskCustomName(this.obelisk);
+                    }
+                    else
+                    {
+                        // Notify the MasterPlayer of name change
+                        var updateMessage = new ObeliskUpdateMessage(this.obelisk);
+                        ModEntry.helper.Multiplayer.SendMessage(updateMessage, nameof(ObeliskUpdateMessage), modIDs: new[] { ModEntry.manifest.UniqueID });
+                    }
                     this.exitThisMenu();
 
                     // Paginate the obelisks to order them with the new name
