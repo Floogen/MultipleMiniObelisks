@@ -1,5 +1,4 @@
-﻿using Harmony;
-using StardewValley;
+﻿using StardewValley;
 using System.Reflection;
 using StardewModdingAPI;
 using Microsoft.Xna.Framework;
@@ -11,6 +10,7 @@ using StardewValley.Locations;
 using StardewValley.Buildings;
 using MultipleMiniObelisks.Objects;
 using Newtonsoft.Json;
+using HarmonyLib;
 
 namespace MultipleMiniObelisks.Patches
 {
