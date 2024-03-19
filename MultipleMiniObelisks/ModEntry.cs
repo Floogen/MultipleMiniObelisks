@@ -274,7 +274,7 @@ namespace MultipleMiniObelisks
             DelayedAction.fadeAfterDelay(delegate
             {
                 Game1.warpFarmer(obeliskLocation.NameOrUniqueName, (int)destinationTile.X, (int)destinationTile.Y, flip: false);
-                if (!Game1.isStartingToGetDarkOut() && !Game1.isRaining)
+                if (!Game1.isStartingToGetDarkOut(obeliskLocation) && !Game1.isRaining)
                 {
                     Game1.playMorningSong();
                 }
