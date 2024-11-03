@@ -128,7 +128,7 @@ namespace MultipleMiniObelisks
             List<MiniObelisk> miniObelisks = JsonConvert.DeserializeObject<List<MiniObelisk>>(Game1.player.modData[ObeliskLocationsKey]);
 
             // Add any new obelisks
-            foreach (var tileToObelisk in e.Added.Where(o => o.Value.ParentSheetIndex == 238 && o.Value.bigCraftable))
+            foreach (var tileToObelisk in e.Added.Where(o => o.Value.ParentSheetIndex == 238 && o.Value.bigCraftable.Value))
             {
                 StardewValley.Object obelisk = tileToObelisk.Value;
                 if (!obelisk.modData.ContainsKey(ObeliskNameDataKey))
@@ -140,7 +140,7 @@ namespace MultipleMiniObelisks
             }
 
             // Remove any removed obelisks
-            foreach (var tileToObelisk in e.Removed.Where(o => o.Value.ParentSheetIndex == 238 && o.Value.bigCraftable))
+            foreach (var tileToObelisk in e.Removed.Where(o => o.Value.ParentSheetIndex == 238 && o.Value.bigCraftable.Value))
             {
                 miniObelisks = miniObelisks.Where(o => !(o.LocationName == e.Location.NameOrUniqueName && o.Tile == tileToObelisk.Key)).ToList();
             }
@@ -188,7 +188,7 @@ namespace MultipleMiniObelisks
             {
                 if (location.numberOfObjectsOfType("238", true) > 0)
                 {
-                    foreach (var tileToObject in location.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
+                    foreach (var tileToObject in location.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable.Value))
                     {
                         StardewValley.Object obelisk = tileToObject.Value;
                         if (!obelisk.modData.ContainsKey(ObeliskNameDataKey))
@@ -212,7 +212,7 @@ namespace MultipleMiniObelisks
 
                         if (indoorLocation.numberOfObjectsOfType("238", true) > 0)
                         {
-                            foreach (var tileToObject in indoorLocation.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
+                            foreach (var tileToObject in indoorLocation.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable.Value))
                             {
                                 StardewValley.Object obelisk = tileToObject.Value;
                                 if (!obelisk.modData.ContainsKey(ObeliskNameDataKey))
