@@ -5,7 +5,7 @@
   "Description": "Allows you to place more than 2 mini-obelisks.",
   "UniqueID": "PeacefulEnd.MultipleMiniObelisks",
   "EntryDll": "MultipleMiniObelisks.dll",
-  "MinimumApiVersion": "3.14.0",
+  "MinimumGameVersion": "1.6.9",
   "UpdateKeys": [ "Nexus:7900" ],
-  "Dependencies": [ ]
+  "Dependencies": []
 }
