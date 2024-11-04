@@ -1,10 +1,10 @@
-﻿using Harmony;
-using StardewValley;
+﻿using StardewValley;
 using System.Reflection;
 using StardewModdingAPI;
 using Microsoft.Xna.Framework;
 using StardewValley.Menus;
 using System.Linq;
+using HarmonyLib;
 
 namespace MultipleMiniObelisks.Patches
 {

@@ -1,6 +1,7 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using Microsoft.Xna.Framework;
 using MultipleMiniObelisks.Multiplayer;
+using MultipleMiniObelisks.MultipleMiniObelisks.Extensions;
 using MultipleMiniObelisks.Objects;
 using Newtonsoft.Json;
 using StardewModdingAPI;
@@ -44,7 +45,7 @@ namespace MultipleMiniObelisks
             // Load our Harmony patches
             try
             {
-                var harmony = HarmonyInstance.Create(this.ModManifest.UniqueID);
+                var harmony = new Harmony(this.ModManifest.UniqueID);
                 harmony.PatchAll(Assembly.GetExecutingAssembly());
             }
             catch (Exception e)
@@ -127,7 +128,7 @@ namespace MultipleMiniObelisks
             List<MiniObelisk> miniObelisks = JsonConvert.DeserializeObject<List<MiniObelisk>>(Game1.player.modData[ObeliskLocationsKey]);
 
             // Add any new obelisks
-            foreach (var tileToObelisk in e.Added.Where(o => o.Value.ParentSheetIndex == 238 && o.Value.bigCraftable))
+            foreach (var tileToObelisk in e.Added.Where(o => o.Value.ParentSheetIndex == 238 && o.Value.bigCraftable.Value))
             {
                 StardewValley.Object obelisk = tileToObelisk.Value;
                 if (!obelisk.modData.ContainsKey(ObeliskNameDataKey))
@@ -139,7 +140,7 @@ namespace MultipleMiniObelisks
             }
 
             // Remove any removed obelisks
-            foreach (var tileToObelisk in e.Removed.Where(o => o.Value.ParentSheetIndex == 238 && o.Value.bigCraftable))
+            foreach (var tileToObelisk in e.Removed.Where(o => o.Value.ParentSheetIndex == 238 && o.Value.bigCraftable.Value))
             {
                 miniObelisks = miniObelisks.Where(o => !(o.LocationName == e.Location.NameOrUniqueName && o.Tile == tileToObelisk.Key)).ToList();
             }
@@ -185,9 +186,9 @@ namespace MultipleMiniObelisks
             List<MiniObelisk> miniObelisks = new List<MiniObelisk>();
             foreach (GameLocation location in Game1.locations)
             {
-                if (location.numberOfObjectsOfType(238, true) > 0)
+                if (location.numberOfObjectsOfType("238", true) > 0)
                 {
-                    foreach (var tileToObject in location.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
+                    foreach (var tileToObject in location.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable.Value))
                     {
                         StardewValley.Object obelisk = tileToObject.Value;
                         if (!obelisk.modData.ContainsKey(ObeliskNameDataKey))
@@ -199,9 +200,9 @@ namespace MultipleMiniObelisks
                     }
                 }
 
-                if (location is BuildableGameLocation)
+                if (location.buildings is not null)
                 {
-                    foreach (Building b2 in (location as BuildableGameLocation).buildings)
+                    foreach (Building b2 in location.buildings)
                     {
                         GameLocation indoorLocation = b2.indoors.Value;
                         if (indoorLocation is null)
@@ -209,9 +210,9 @@ namespace MultipleMiniObelisks
                             continue;
                         }
 
-                        if (indoorLocation.numberOfObjectsOfType(238, true) > 0)
+                        if (indoorLocation.numberOfObjectsOfType("238", true) > 0)
                         {
-                            foreach (var tileToObject in indoorLocation.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable))
+                            foreach (var tileToObject in indoorLocation.Objects.Pairs.Where(p => p.Value.ParentSheetIndex == 238 && p.Value.bigCraftable.Value))
                             {
                                 StardewValley.Object obelisk = tileToObject.Value;
                                 if (!obelisk.modData.ContainsKey(ObeliskNameDataKey))
@@ -273,7 +274,7 @@ namespace MultipleMiniObelisks
             DelayedAction.fadeAfterDelay(delegate
             {
                 Game1.warpFarmer(obeliskLocation.NameOrUniqueName, (int)destinationTile.X, (int)destinationTile.Y, flip: false);
-                if (!Game1.isStartingToGetDarkOut() && !Game1.isRaining)
+                if (!Game1.isStartingToGetDarkOut(obeliskLocation) && !Game1.isRaining)
                 {
                     Game1.playMorningSong();
                 }
@@ -290,9 +291,9 @@ namespace MultipleMiniObelisks
             }, 1000);
             new Rectangle(who.GetBoundingBox().X, who.GetBoundingBox().Y, 64, 64).Inflate(192, 192);
             int j = 0;
-            for (int xTile = who.getTileX() + 8; xTile >= who.getTileX() - 8; xTile--)
+            for (int xTile = (int)(who.Tile.X + 8); xTile >= who.Tile.X - 8; xTile--)
             {
-                obeliskLocation.temporarySprites.Add(new TemporaryAnimatedSprite(6, new Vector2(xTile, who.getTileY()) * 64f, Color.White, 8, flipped: false, 50f)
+                obeliskLocation.temporarySprites.Add(new TemporaryAnimatedSprite(6, new Vector2(xTile, who.Tile.Y) * 64f, Color.White, 8, flipped: false, 50f)
                 {
                     layerDepth = 1f,
                     delayBeforeAnimationStart = j * 25,

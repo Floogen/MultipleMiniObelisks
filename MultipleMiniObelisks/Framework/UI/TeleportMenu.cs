@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MultipleMiniObelisks.Multiplayer;
+using MultipleMiniObelisks.MultipleMiniObelisks.Extensions;
 using MultipleMiniObelisks.Objects;
 using StardewModdingAPI;
 using StardewValley;
@@ -191,7 +192,7 @@ namespace MultipleMiniObelisks.UI
                     DelayedAction.fadeAfterDelay(delegate
                     {
                         Game1.warpFarmer(obeliskLocation.NameOrUniqueName, (int)v.X, (int)v.Y, flip: false);
-                        if (!Game1.isStartingToGetDarkOut() && !Game1.isRaining)
+                        if (!Game1.isStartingToGetDarkOut(obeliskLocation) && !Game1.isRaining)
                         {
                             Game1.playMorningSong();
                         }
@@ -208,9 +209,9 @@ namespace MultipleMiniObelisks.UI
                     }, 1000);
                     new Rectangle(who.GetBoundingBox().X, who.GetBoundingBox().Y, 64, 64).Inflate(192, 192);
                     int j = 0;
-                    for (int xTile = who.getTileX() + 8; xTile >= who.getTileX() - 8; xTile--)
+                    for (int xTile = (int)(who.Tile.X + 8); xTile >= who.Tile.X - 8; xTile--)
                     {
-                        obeliskLocation.temporarySprites.Add(new TemporaryAnimatedSprite(6, new Vector2(xTile, who.getTileY()) * 64f, Color.White, 8, flipped: false, 50f)
+                        obeliskLocation.temporarySprites.Add(new TemporaryAnimatedSprite(6, new Vector2(xTile, who.Tile.Y) * 64f, Color.White, 8, flipped: false, 50f)
                         {
                             layerDepth = 1f,
                             delayBeforeAnimationStart = j * 25,
